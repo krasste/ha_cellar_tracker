@@ -340,36 +340,30 @@ class WineInventorySensor(CoordinatorEntity, SensorEntity):
         wineList = []
         groupby = "iWine"
 
-        # 1. Erstelle eine tiefere Kopie der Daten, um die echten Sensor-Daten nicht zu beschädigen
         modified_data = []
         for item in self.coordinator.data:
             item_copy = dict(item)
-            # KÜNSTLICHER TRICK: Wir hängen die Größe an die Wein-ID an (z.B. "1234_750ml")
-            # Dadurch wird jede Flaschengröße für die Integration zu einem "eigenen Wein"
+            # z.B. "1234_750ml
             wine_id = item.get(groupby, "")
             size_val = item.get("Size", item.get("iSize", "750ml"))
             item_copy[groupby] = f"{wine_id}_{size_val}"
             modified_data.append(item_copy)
 
-        # 2. Hole die Liste der künstlichen, kombinierten IDs
         idList = []
         for item in modified_data:
             idList.append(item[groupby])
 
-        # 3. Zähle die exakten Duplikate pro Wein-Größen-Kombination
+        # duplicates per wine size
         counts = dict()
         for i in idList:
             counts[i] = counts.get(i, 0) + 1
 
-        # 4. Werte auslesen und die korrekte Menge hinzufügen
+        # clear
         for key, value in counts.items():
-            # Verwende find_first_matching_element, aber auf unseren manipulierten Daten
             element = find_first_matching_element(modified_data, groupby, key)
             
-            # Die originale Funktion extrahiert alle Felder (Wine, Vintage, etc.)
             distinct_values = self._get_distinct_values(element)
             
-            # Wichtig: Die künstliche ID wieder säubern, falls das System die originale iWine-ID braucht
             if 'iWine' in distinct_values and "_" in str(distinct_values['iWine']):
                 distinct_values['iWine'] = distinct_values['iWine'].split("_")[0]
                 
